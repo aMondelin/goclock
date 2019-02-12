@@ -10,8 +10,8 @@ TYPE_INCREMENT = ['byoyomi', 'bronstein', 'fischer']
 class Player(object):
     def __init__(self, player_number):
         self.player_number = player_number
-        self.change_mode_active = False
-        self.mode_active = 'time_left'
+        self.change_mode_active = True
+        self.mode_active = 0
         self.additional_time_type = 0
         self.global_time_left = 10.0
         self.begin_move_time = 0
@@ -19,37 +19,74 @@ class Player(object):
         self.additional_time_left = 0
 
 
-def switch_modes(player, label_,switch_mode):
-    find_mode_index = MODES_ORDER.index(player.mode_active)
+def increment_number(current_number, operator, max_value):
+    if operator == '+':
+        if current_number < max_value:
+            return (current_number + 1)
+        else:
+            return 0
+
+    elif operator == '-':
+        if current_number > 0:
+            return (current_number - 1)
+        else:
+            return max_value
+
+
+def switch_global_mode(player, operator, mode_ui):
+    current_mode = player.mode_active
     limit_mode_order = len(MODES_ORDER) - 1
 
-    if switch_mode == "+":
-        if find_mode_index < limit_mode_order:
-            player.mode_active = MODES_ORDER[find_mode_index + 1]
-        else:
-            player.mode_active = MODES_ORDER[0]
+    new_value = increment_number(current_mode, operator, limit_mode_order)
+    player.mode_active = new_value
 
-    elif switch_mode == "-":
-        if find_mode_index > 0:
-            player.mode_active = MODES_ORDER[find_mode_index - 1]
-        else:
-            player.mode_active = MODES_ORDER[len(MODES_ORDER)-1]
+    mode_ui.setText(str(MODES_ORDER[new_value]))
 
-    label_.setText(player.mode_active)
+
+def switch_increment_type(player, operator, mode_ui):
+    current_mode = player.additional_time_type
+    limit_mode_order = len(TYPE_INCREMENT) - 1
+
+    new_value = increment_number(current_mode, operator, limit_mode_order)
+    player.additional_time_type = new_value
+
+    mode_ui.setText(str(TYPE_INCREMENT[new_value]))
+
+
+def update_player_time_left(player, time_ui):
+    time_ui.setText(str(player.global_time_left))
+
+
+def edit_time_left(player, operator, time_ui):
+    current_player_time_left = player.global_time_left
+
+    if operator == '+' and current_player_time_left < 6000.0:
+        player.global_time_left += 1
+
+    elif operator == '-' and current_player_time_left > 1.0:
+        player.global_time_left -= 1
+
+    update_player_time_left(player, time_ui)
 
 
 def toggle_mode_player(player):
     player.change_mode_active = not player.change_mode_active
 
 
-def edit_mode_player(player, switch_mode, label_):
-    change_mode_player = toggle_mode_player(player)
+def edit_mode_player(player, operator, mode_ui, time_ui):
+    edit_mode_player_state = player.change_mode_active
 
-    if change_mode_player == True:
-        pass
+    if edit_mode_player_state == False:
+        current_mode_player = player.mode_active
+
+        if current_mode_player == 0:
+            edit_time_left(player, operator, time_ui)
+
+        elif current_mode_player == 1:
+            switch_increment_type(player, operator, mode_ui)
 
     else:
-        switch_modes(player, label_, switch_mode)
+        switch_global_mode(player, operator, mode_ui)
 
 
 def players_time_left(player):
@@ -92,11 +129,17 @@ class MainUi(QWidget):
         self.chrono_layout = QHBoxLayout()
         self.chrono_widget.setLayout(self.chrono_layout)
 
-        self.chrono_label_1 = QLabel(str(self.player_1.begin_move_time))
-        self.chrono_label_2 = QLabel(str(self.player_2.begin_move_time))
+        self.chrono_label_1 = QLabel(str(self.player_1.global_time_left))
+        self.chrono_byoyomi_label_1 = QLabel(str(self.player_1.additional_time_left_count))
+        self.chrono_pause = QPushButton('Pause')
+        self.chrono_label_2 = QLabel(str(self.player_2.global_time_left))
+        self.chrono_byoyomi_label_2 = QLabel(str(self.player_2.additional_time_left_count))
 
         self.chrono_layout.addWidget(self.chrono_label_1)
+        self.chrono_layout.addWidget(self.chrono_byoyomi_label_1)
+        self.chrono_layout.addWidget(self.chrono_pause)
         self.chrono_layout.addWidget(self.chrono_label_2)
+        self.chrono_layout.addWidget(self.chrono_byoyomi_label_2)
 
         self.infos_widget = QWidget()
         self.infos_layout = QHBoxLayout()
@@ -145,10 +188,10 @@ class MainUi(QWidget):
         toggle_mode_player(self.player_1)
 
     def add_button_1(self):
-        edit_mode_player(self.player_1, '+', self.infos_player_1)
+        edit_mode_player(self.player_1, '+', self.infos_player_1, self.chrono_label_1)
 
     def substract_button_1(self):
-        edit_mode_player(self.player_1, '-', self.infos_player_1)
+        edit_mode_player(self.player_1, '-', self.infos_player_1, self.chrono_label_1)
 
     def change_mode_2(self):
         toggle_mode_player(self.player_2)
