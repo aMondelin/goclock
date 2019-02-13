@@ -5,6 +5,8 @@ from PySide.QtGui import *
 
 MODES_ORDER = ['time_left', 'type_increment', 'increment_count_left', 'increment_time_left']
 TYPE_INCREMENT = ['byoyomi', 'bronstein', 'fischer']
+PLUS_OPERATOR = '+'
+MINUS_OPERATOR = '-'
 
 
 class Player(object):
@@ -13,20 +15,20 @@ class Player(object):
         self.change_mode_active = True
         self.mode_active = 0
         self.additional_time_type = 0
-        self.global_time_left = 10.0
+        self.global_time_left = 1200.0
         self.begin_move_time = 0
-        self.additional_time_left_count = 0
-        self.additional_time_left = 0
+        self.additional_time_left_count = 5
+        self.additional_time_left = 30.0
 
 
 def increment_number(current_number, operator, max_value):
-    if operator == '+':
+    if operator == PLUS_OPERATOR:
         if current_number < max_value:
             return (current_number + 1)
         else:
             return 0
 
-    elif operator == '-':
+    elif operator == MINUS_OPERATOR:
         if current_number > 0:
             return (current_number - 1)
         else:
@@ -38,12 +40,18 @@ def switch_global_mode(player, operator, mode_ui):
     limit_mode_order = len(MODES_ORDER) - 1
 
     new_value = increment_number(current_mode, operator, limit_mode_order)
-    player.mode_active = new_value
 
+    if new_value == 2 and player.additional_time_type != 0:
+        if operator == PLUS_OPERATOR:
+            new_value += 1
+        elif operator == MINUS_OPERATOR:
+            new_value -= 1
+
+    player.mode_active = new_value
     mode_ui.setText(str(MODES_ORDER[new_value]))
 
 
-def switch_increment_type(player, operator, mode_ui):
+def edit_increment_type(player, operator, mode_ui):
     current_mode = player.additional_time_type
     limit_mode_order = len(TYPE_INCREMENT) - 1
 
@@ -57,13 +65,17 @@ def update_player_time_left(player, time_ui):
     time_ui.setText(str(player.global_time_left))
 
 
+def update_player_increment_count(player, time_ui):
+    time_ui.setText(str(player.additional_time_left_count))
+
+
 def edit_time_left(player, operator, time_ui):
     current_player_time_left = player.global_time_left
 
-    if operator == '+' and current_player_time_left < 6000.0:
+    if operator == PLUS_OPERATOR and current_player_time_left < 6000.0:
         player.global_time_left += 1
 
-    elif operator == '-' and current_player_time_left > 1.0:
+    elif operator == MINUS_OPERATOR and current_player_time_left > 1.0:
         player.global_time_left -= 1
 
     update_player_time_left(player, time_ui)
@@ -73,7 +85,35 @@ def toggle_mode_player(player):
     player.change_mode_active = not player.change_mode_active
 
 
-def edit_mode_player(player, operator, mode_ui, time_ui):
+def edit_count_increment_left(player, operator, increment_ui):
+    current_increment_count = player.additional_time_left_count
+
+    if operator == PLUS_OPERATOR:
+        player.additional_time_left_count += 1
+
+    elif operator == MINUS_OPERATOR and current_increment_count != 1:
+        player.additional_time_left_count -= 1
+
+    update_player_increment_count(player, increment_ui)
+
+
+def update_player_increment_time(player, time_ui):
+    time_ui.setText(str(player.additional_time_left))
+
+
+def edit_time_increment(player, operator, time_ui):
+    current_increment_time = player.additional_time_left
+
+    if operator == PLUS_OPERATOR:
+        player.additional_time_left += 1
+
+    elif operator == MINUS_OPERATOR and current_increment_time > 1:
+        player.additional_time_left -= 1
+
+    update_player_increment_time(player, time_ui)
+
+
+def edit_mode_player(player, operator, mode_ui, time_ui, increment_ui):
     edit_mode_player_state = player.change_mode_active
 
     if edit_mode_player_state == False:
@@ -83,7 +123,13 @@ def edit_mode_player(player, operator, mode_ui, time_ui):
             edit_time_left(player, operator, time_ui)
 
         elif current_mode_player == 1:
-            switch_increment_type(player, operator, mode_ui)
+            edit_increment_type(player, operator, mode_ui)
+
+        elif current_mode_player == 2:
+            edit_count_increment_left(player, operator, increment_ui)
+
+        elif current_mode_player == 3:
+            edit_time_increment(player, operator, time_ui)
 
     else:
         switch_global_mode(player, operator, mode_ui)
@@ -188,19 +234,35 @@ class MainUi(QWidget):
         toggle_mode_player(self.player_1)
 
     def add_button_1(self):
-        edit_mode_player(self.player_1, '+', self.infos_player_1, self.chrono_label_1)
+        edit_mode_player(self.player_1,
+                         PLUS_OPERATOR,
+                         self.infos_player_1,
+                         self.chrono_label_1,
+                         self.chrono_byoyomi_label_1)
 
     def substract_button_1(self):
-        edit_mode_player(self.player_1, '-', self.infos_player_1, self.chrono_label_1)
+        edit_mode_player(self.player_1,
+                         MINUS_OPERATOR,
+                         self.infos_player_1,
+                         self.chrono_label_1,
+                         self.chrono_byoyomi_label_1)
 
     def change_mode_2(self):
         toggle_mode_player(self.player_2)
 
     def add_button_2(self):
-        pass
+        edit_mode_player(self.player_2,
+                         PLUS_OPERATOR,
+                         self.infos_player_2,
+                         self.chrono_label_2,
+                         self.chrono_byoyomi_label_2)
 
     def substract_button_2(self):
-        pass
+        edit_mode_player(self.player_2,
+                         MINUS_OPERATOR,
+                         self.infos_player_2,
+                         self.chrono_label_2,
+                         self.chrono_byoyomi_label_2)
 
     def launch_game(self):
         game_freeze = False
