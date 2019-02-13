@@ -150,11 +150,14 @@ class MainUi(QWidget):
     def __init__(self):
         super(MainUi, self).__init__()
 
+        self._game_running = False
         self.player_1 = Player(True)
         self.player_2 = Player(False)
 
         self.init_ui()
-        # self.launch_game()
+
+    def closeEvent(self, event):
+        self._game_running = False
 
     def init_ui(self):
         self.resize(300, 150)
@@ -228,8 +231,6 @@ class MainUi(QWidget):
         self.mode_button_player_2.clicked.connect(self.change_mode_2)
         self.plus_button_player_2.clicked.connect(self.add_button_2)
 
-        self.show()
-
     def change_mode_1(self):
         toggle_mode_player(self.player_1)
 
@@ -265,25 +266,30 @@ class MainUi(QWidget):
                          self.chrono_byoyomi_label_2)
 
     def launch_game(self):
-        game_freeze = False
+        # Initial game state
+        player_1 = Player(1)
 
-        # last_player = False
-        # player_active = True
-        # player_1.begin_move_time = time.time()
-
-        while not game_freeze:
+        self._game_running = True
+        while self._game_running:
+            # check UI changes
+            QApplication.processEvents()
+            # Update game state from Ui
+            current_time = players_time_left(player_1)
+            # Update game state from engine
             pass
-            # if player_active != last_player:
-            #     current_time = players_time_left(player_1)
-            #
-            #     print(int(current_time))
+            # Update Ui
+            print(int(current_time))
 
 
-def generate_ui():
+def main():
     app = QApplication(sys.argv)
+
     main_ui = MainUi()
+    main_ui.show()
+    main_ui.launch_game()
+
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
-    generate_ui()
+    main()
