@@ -1,3 +1,3 @@
-import time
+toto = 1
 
-print(time.time())
+print(not toto)
